@@ -69,6 +69,9 @@ class Switches {
   inline bool released() const { return released(SWITCH_PLAY); }
   inline bool just_pressed() const { return just_pressed(SWITCH_PLAY); }
   inline bool pressed() const { return pressed(SWITCH_PLAY); }
+  inline bool pressed_immediate() const {
+    return HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == GPIO_PIN_RESET;
+  }
 
  private:
   uint8_t switch_state_[3];

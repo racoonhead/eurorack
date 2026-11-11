@@ -33,12 +33,41 @@
 namespace elements {
 
 void System::Init(bool application) {
+  if (application) {
+    SCB->VTOR = 0x08020000UL;
+  }
+
+  // Enable D2/D3 SRAM clocks (required for .dma in SRAM3 and .ramd3 in SRAM4)
+  __HAL_RCC_D2SRAM1_CLK_ENABLE();
+  __HAL_RCC_D2SRAM2_CLK_ENABLE();
+  __HAL_RCC_D2SRAM3_CLK_ENABLE();
+  __HAL_RCC_D3SRAM1_CLKAM_ENABLE();
+
+  // Configure uncached MPU region for RAM_D2_DMA (SRAM3 @ 0x30040000, 32 KB)
+  HAL_MPU_Disable();
+  MPU_Region_InitTypeDef mpu_init = {};
+  mpu_init.Enable           = MPU_REGION_ENABLE;
+  mpu_init.Number           = MPU_REGION_NUMBER0;
+  mpu_init.BaseAddress      = 0x30040000;
+  mpu_init.Size             = MPU_REGION_SIZE_32KB;
+  mpu_init.SubRegionDisable = 0x0;
+  mpu_init.TypeExtField     = MPU_TEX_LEVEL0;
+  mpu_init.AccessPermission = MPU_REGION_FULL_ACCESS;
+  mpu_init.DisableExec      = MPU_INSTRUCTION_ACCESS_ENABLE;
+  mpu_init.IsShareable      = MPU_ACCESS_SHAREABLE;
+  mpu_init.IsCacheable      = MPU_ACCESS_NOT_CACHEABLE;
+  mpu_init.IsBufferable     = MPU_ACCESS_NOT_BUFFERABLE;
+  HAL_MPU_ConfigRegion(&mpu_init);
+  HAL_MPU_Enable(MPU_HFNMI_PRIVDEF);
+
+  SCB_EnableICache();
+  SCB_EnableDCache();
+
   HAL_Init();
 
   // -------------------------------------------------------------------------
   // Power: voltage scaling VOS0 required for 480 MHz operation.
   // -------------------------------------------------------------------------
-  __HAL_RCC_PWR_CLK_ENABLE();
   HAL_PWREx_ConfigSupply(PWR_LDO_SUPPLY);
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
   while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
@@ -111,10 +140,10 @@ void System::Init(bool application) {
 
   // -------------------------------------------------------------------------
   // Bootloader compatibility: move vector table to application offset.
-  // Matches stmlib bootloader convention (32 KB = 0x8000 offset).
+  // Matches stmlib H7 bootloader convention (128 KB Sector 1 = 0x08020000).
   // -------------------------------------------------------------------------
   if (application) {
-    SCB->VTOR = 0x08008000UL;
+    SCB->VTOR = 0x08020000UL;
   }
 }
 

@@ -34,7 +34,7 @@
 #include "stmlib/dsp/parameter_interpolator.h"
 #include "stmlib/dsp/units.h"
 
-#include "rings/resources.h"
+#include "elements/resources.h"
 
 namespace elements {
 

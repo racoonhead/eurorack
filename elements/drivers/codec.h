@@ -112,10 +112,9 @@ class Codec {
   
   FillBufferCallback callback_;
   
-  // HAL handles (stored in .cc to keep them out of this header).
-  // DMA buffer must be in AXI SRAM or D1 SRAM for DMA access on H743.
-  Frame tx_dma_buffer_[kAudioChunkSize * 2];
-  Frame rx_dma_buffer_[kAudioChunkSize * 2];
+  // DMA buffer placed in D2 SRAM3 (.dma section at 0x30040000) for DMA1 access on H743.
+  static Frame tx_dma_buffer_[kAudioChunkSize * 2] __attribute__((section (".dma")));
+  static Frame rx_dma_buffer_[kAudioChunkSize * 2] __attribute__((section (".dma")));
   stmlib::RingBuffer<Frame, kAudioChunkSize * kNumFIFOChunks> rx_buffer_;
   stmlib::RingBuffer<Frame, kAudioChunkSize * kNumFIFOChunks> tx_buffer_;
 

@@ -46,7 +46,7 @@ using namespace stm_audio_bootloader;
 const double kSampleRate = 48000.0;
 const double kModulationRate = 6000.0;
 const double kBitRate = 12000.0;
-const uint32_t kStartAddress = 0x08008000;
+const uint32_t kStartAddress = 0x08020000;
 
 Codec codec;
 Demodulator demodulator;
@@ -126,6 +126,7 @@ void UpdateLeds() {
 }
 
 void SysTick_Handler() {
+  HAL_IncTick();
   system_clock.Tick();
   pots.Scan();
   if (pots.last_read() == POT_EXCITER_BLOW_LEVEL) {
@@ -133,7 +134,7 @@ void SysTick_Handler() {
     gain = gain_raw * gain_raw >> 16;
   }
   push_switch.Debounce();
-  if (push_switch.released()) {
+  if (push_switch.released(SWITCH_PLAY)) {
     switch_released = true;
   }
   UpdateLeds();
@@ -162,40 +163,35 @@ void FillBuffer(Codec::Frame* input, Codec::Frame* output, size_t n) {
 
 static size_t current_address;
 static uint16_t packet_index;
-static uint32_t kSectorBaseAddress[] = {
-  0x08000000,
-  0x08004000,
-  0x08008000,
-  0x0800C000,
-  0x08010000,
-  0x08020000,
-  0x08040000,
-  0x08060000,
-  0x08080000,
-  0x080A0000,
-  0x080C0000,
-  0x080E0000
-};
-const uint32_t kBlockSize = 16384;
+const uint32_t kBlockSize = 0x10000;
 const uint16_t kPacketsPerBlock = kBlockSize / kPacketSize;
 uint8_t rx_buffer[kBlockSize];
 
 void ProgramPage(const uint8_t* data, size_t size) {
-  FLASH_Unlock();
-  FLASH_ClearFlag(
-      FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | 
-      FLASH_FLAG_PGAERR | FLASH_FLAG_PGPERR| FLASH_FLAG_PGSERR); 
-  for (int32_t i = 0; i < 12; ++i) {
-    if (current_address == kSectorBaseAddress[i]) {
-      FLASH_EraseSector(i * 8, VoltageRange_3);
-    }
+  HAL_FLASH_Unlock();
+
+  if ((current_address % 0x00020000) == 0) {
+    const size_t sector_index = (current_address - 0x08000000) / 0x00020000;
+    FLASH_EraseInitTypeDef erase_params = {};
+    erase_params.TypeErase    = FLASH_TYPEERASE_SECTORS;
+    erase_params.Banks        = (sector_index < 8) ? FLASH_BANK_1 : FLASH_BANK_2;
+    erase_params.Sector       = sector_index;
+    erase_params.NbSectors    = 1;
+    erase_params.VoltageRange = FLASH_VOLTAGE_RANGE_4;
+    uint32_t sector_error = 0;
+    HAL_FLASHEx_Erase(&erase_params, &sector_error);
   }
-  const uint32_t* words = static_cast<const uint32_t*>(
-      static_cast<const void*>(data));
-  for (size_t written = 0; written < size; written += 4) {
-    FLASH_ProgramWord(current_address, *words++);
-    current_address += 4;
+
+  const size_t flash_block_size = 32;
+  for (size_t written = 0; written < size; written += flash_block_size) {
+    HAL_FLASH_Program(
+        FLASH_TYPEPROGRAM_FLASHWORD,
+        current_address,
+        reinterpret_cast<uint32_t>(data));
+    current_address += flash_block_size;
+    data += flash_block_size;
   }
+  HAL_FLASH_Lock();
 }
 
 void Init() {
@@ -211,7 +207,7 @@ void Init() {
 }
 
 void InitializeReception() {
-  decoder.Init(20000);
+  decoder.Init(20000, true);
   demodulator.Init(
       kModulationRate / kSampleRate * 4294967296.0,
       kSampleRate / kModulationRate,

@@ -34,16 +34,10 @@
 #include "elements/dsp/fx/reverb.h"
 #include "elements/dsp/ominous_voice.h"
 #include "elements/dsp/patch.h"
+#include "elements/dsp/performance_state.h"
 #include "elements/dsp/voice.h"
 
 namespace elements {
-
-struct PerformanceState {
-  bool gate;
-  float note;
-  float modulation;
-  float strength;
-};
 
 // Polyphony is actually possible, but you have to reduce the number of modes
 // to 16, and this doesn't sound very good...

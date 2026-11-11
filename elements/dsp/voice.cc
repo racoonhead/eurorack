@@ -284,7 +284,7 @@ void Voice::Process(
     dc_blocker_.Process(raw, size);
     PerformanceState synth_state;
     synth_state.gate = gate_in;
-    synth_state.note = log2f(frequency / 440.0f) * 12.0f + 69.0f;
+    synth_state.note = log2f(frequency / a3) * 12.0f + 69.0f;
     synth_state.modulation = 0.0f;
     synth_state.strength = strength_;
     string_synth_.Process(synth_state, patch, raw, center, sides, size);

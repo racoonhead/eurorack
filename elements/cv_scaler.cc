@@ -72,25 +72,25 @@ Law CvScaler::law_[POT_LAST] = {
   LAW_QUADRATIC_BIPOLAR  // POT_SPACE_ATTENUVERTER
 };
 
-Storage<1> storage;
+ChunkStorage<15, CalibrationSettings, CalibrationState> storage;
+CalibrationState calibration_state;
 
 void CvScaler::Init() {
   pots_.Init();
   cv_.Init(false);
   gate_input_.Init();
   
-  freshly_baked_ = false;
-  if (!storage.ParsimoniousLoad(&calibration_settings_, &version_token_)) {
-    calibration_settings_.pitch_offset = 66.67f;
-    calibration_settings_.pitch_scale = -84.26f;
-    for (size_t i = 0; i < CV_ADC_CHANNEL_LAST; ++i) {
-      calibration_settings_.offset[i] = 10.0f * 20.0f / 120.0f / 3.3f;
-    }
-    calibration_settings_.boot_in_easter_egg_mode = false;
-    calibration_settings_.resonator_model = 0;
-    freshly_baked_ = true;
-    SaveCalibration();
+  calibration_settings_.pitch_offset = 66.67f;
+  calibration_settings_.pitch_scale = -84.26f;
+  for (size_t i = 0; i < CV_ADC_CHANNEL_LAST; ++i) {
+    calibration_settings_.offset[i] = 10.0f * 20.0f / 120.0f / 3.3f;
   }
+  calibration_settings_.boot_in_easter_egg_mode = false;
+  calibration_settings_.resonator_model = 0;
+  fill(&calibration_settings_.padding[0], &calibration_settings_.padding[62], 0);
+  fill(&calibration_state.padding[0], &calibration_state.padding[24], 0);
+
+  freshly_baked_ = !storage.Init(&calibration_settings_, &calibration_state);
   
   CONSTRAIN(calibration_settings_.resonator_model, 0, 6);
   
@@ -102,7 +102,8 @@ void CvScaler::Init() {
 }
 
 void CvScaler::SaveCalibration() {
-  storage.ParsimoniousSave(calibration_settings_, &version_token_);
+  fill(&calibration_settings_.padding[0], &calibration_settings_.padding[62], 0);
+  storage.SavePersistentData();
 }
 
 void CvScaler::ReadPanelPots() {

@@ -24,13 +24,14 @@
 
 # System specifications
 F_CRYSTAL      = 8000000L
-F_CPU          = 168000000L
-SYSCLOCK       = SYSCLK_FREQ_168MHz
-FAMILY         = f4xx
+F_CPU          = 480000000L
+SYSCLOCK       = SYSCLK_FREQ_480MHz
+FAMILY         = h7xx
+HSE_VALUE      = 8000000
 # USB            = enabled
 
 # Preferred upload command
-UPLOAD_COMMAND  = upload_jtag_no_erase
+UPLOAD_COMMAND  = upload_jtag_erase_first_sector
 
 # Packages to build
 TARGET         = elements_bootloader

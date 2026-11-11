@@ -38,7 +38,7 @@
 #include "elements/dsp/dsp.h"
 #include "elements/dsp/follower.h"
 
-#include "rings/resources.h"
+#include "elements/resources.h"
 
 namespace elements {
 

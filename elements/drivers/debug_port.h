@@ -24,41 +24,42 @@
 //
 // -----------------------------------------------------------------------------
 //
-// UART driver for conversing with the factory testing program.
+// UART driver for conversing with the factory testing program (STM32H743).
+// Note: PA9/PA10 are assigned to panel switches on Elements v0.4, so DebugPort
+// is a safe no-op stub to prevent GPIO/USART conflicts.
 
 #ifndef ELEMENTS_DRIVERS_DEBUG_PORT_H_
 #define ELEMENTS_DRIVERS_DEBUG_PORT_H_
 
 #include "stmlib/stmlib.h"
 
-#include <stm32f4xx_conf.h>
+#include <stm32h7xx_hal.h>
 
 namespace elements {
 
 class DebugPort {
  public:
-  
   DebugPort() { }
   ~DebugPort() { }
-  
+
   void Init();
-  
+
   bool writable() {
-    return USART1->SR & USART_FLAG_TXE;
+    return false;
   }
-  
+
   bool readable() {
-    return USART1->SR & USART_FLAG_RXNE;
+    return false;
   }
-  
+
   void Write(uint8_t byte) {
-    USART1->DR = byte;
+    (void)byte;
   }
-  
+
   uint8_t Read() {
-    return USART1->DR;
+    return 0;
   }
-  
+
  private:
   DISALLOW_COPY_AND_ASSIGN(DebugPort);
 };

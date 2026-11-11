@@ -31,17 +31,13 @@
 
 #include "stmlib/stmlib.h"
 
+#include "elements/dsp/multistage_envelope.h"
+
 namespace elements {
 
-enum EnvelopeShape {
-  ENVELOPE_SHAPE_LINEAR,
-  ENVELOPE_SHAPE_QUARTIC
-};
-
-enum EnvelopeFlags {
-  ENVELOPE_FLAG_RISING_EDGE = 1,
-  ENVELOPE_FLAG_FALLING_EDGE = 2,
-  ENVELOPE_FLAG_GATE = 4
+enum StringSynthEnvelopeShape {
+  STRING_SYNTH_ENVELOPE_SHAPE_LINEAR,
+  STRING_SYNTH_ENVELOPE_SHAPE_QUARTIC
 };
 
 class StringSynthEnvelope {
@@ -81,7 +77,7 @@ class StringSynthEnvelope {
       phase_increment = rate_[segment_];
     }
     float t = phase_;
-    if (shape_[segment_] == ENVELOPE_SHAPE_QUARTIC) {
+    if (shape_[segment_] == STRING_SYNTH_ENVELOPE_SHAPE_QUARTIC) {
       t = 1.0f - t;
       t *= t;
       t *= t;
@@ -104,8 +100,8 @@ class StringSynthEnvelope {
     rate_[0] = attack;
     rate_[1] = decay;
     
-    shape_[0] = ENVELOPE_SHAPE_LINEAR;
-    shape_[1] = ENVELOPE_SHAPE_QUARTIC;
+    shape_[0] = STRING_SYNTH_ENVELOPE_SHAPE_LINEAR;
+    shape_[1] = STRING_SYNTH_ENVELOPE_SHAPE_QUARTIC;
   }
 
   inline void set_ar(float attack, float decay) {
@@ -119,14 +115,14 @@ class StringSynthEnvelope {
     rate_[0] = attack;
     rate_[1] = decay;
     
-    shape_[0] = ENVELOPE_SHAPE_LINEAR;
-    shape_[1] = ENVELOPE_SHAPE_LINEAR;
+    shape_[0] = STRING_SYNTH_ENVELOPE_SHAPE_LINEAR;
+    shape_[1] = STRING_SYNTH_ENVELOPE_SHAPE_LINEAR;
   }
   
  private:
   float level_[4];
   float rate_[4];
-  EnvelopeShape shape_[4];
+  StringSynthEnvelopeShape shape_[4];
   
   int16_t segment_;
   float start_value_;

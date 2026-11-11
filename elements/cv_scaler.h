@@ -44,6 +44,12 @@ struct CalibrationSettings {
   uint8_t boot_in_easter_egg_mode;
   uint8_t resonator_model;
   uint8_t padding[62];
+  enum { tag = 0x494C4143 };  // CALI
+};
+
+struct CalibrationState {
+  uint8_t padding[24];
+  enum { tag = 0x54415453 };  // STAT
 };
 
 class Patch;

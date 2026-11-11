@@ -24,7 +24,9 @@
 //
 // -----------------------------------------------------------------------------
 //
-// Driver for the debug (timing) pin.
+// Driver for the debug (timing) pin (STM32H743).
+// Note: PA9 is used for SWITCH_MODEL_1 on Elements v0.4, so DebugPin is a
+// safe no-op unless explicitly mapped to a dedicated test pad.
 
 #ifndef ELEMENTS_DRIVERS_DEBUG_PIN_H_
 #define ELEMENTS_DRIVERS_DEBUG_PIN_H_
@@ -32,8 +34,8 @@
 #include "stmlib/stmlib.h"
 
 #ifndef TEST
-#include <stm32f4xx_conf.h>
-#endif 
+#include <stm32h7xx_hal.h>
+#endif
 
 namespace elements {
 
@@ -41,29 +43,9 @@ class DebugPin {
  public:
   DebugPin() { }
   ~DebugPin() { }
-#ifdef TEST
   static void Init() { }
-  static void High() { }
-  static void Low() { }
-#else
-  static void Init() {
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
-  
-    GPIO_InitTypeDef gpio_init;
-    gpio_init.GPIO_Pin = GPIO_Pin_9;
-    gpio_init.GPIO_Mode = GPIO_Mode_OUT;
-    gpio_init.GPIO_OType = GPIO_OType_PP;
-    gpio_init.GPIO_Speed = GPIO_Speed_25MHz;
-    gpio_init.GPIO_PuPd = GPIO_PuPd_NOPULL;
-    GPIO_Init(GPIOA, &gpio_init);
-  }
-  static inline void High() {
-    GPIOA->BSRRL = GPIO_Pin_9;
-  }
-  static inline void Low() {
-    GPIOA->BSRRH = GPIO_Pin_9;
-  }
-#endif
+  static inline void High() { }
+  static inline void Low() { }
  private:
   DISALLOW_COPY_AND_ASSIGN(DebugPin);
 };

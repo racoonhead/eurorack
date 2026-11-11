@@ -130,8 +130,10 @@ class StringSynthPart {
   
   float filter_in_buffer_[kMaxBlockSize];
   float filter_out_buffer_[kMaxBlockSize];
+  uint16_t fx_buffer_[4096];
   
   bool clear_fx_;
+  bool previous_gate_;
   
   DISALLOW_COPY_AND_ASSIGN(StringSynthPart);
 };

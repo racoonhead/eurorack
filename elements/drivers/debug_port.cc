@@ -24,41 +24,14 @@
 //
 // -----------------------------------------------------------------------------
 //
-// UART driver for conversing with the factory testing program.
+// UART driver for conversing with the factory testing program (STM32H743).
 
 #include "elements/drivers/debug_port.h"
-
-#include <stm32f4xx_conf.h>
 
 namespace elements {
 
 void DebugPort::Init() {
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
-  
-  // Initialize TX and RX pins.
-  GPIO_InitTypeDef gpio_init;
-  gpio_init.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;
-  gpio_init.GPIO_Speed = GPIO_Speed_50MHz;
-  gpio_init.GPIO_Mode = GPIO_Mode_AF;
-  gpio_init.GPIO_OType = GPIO_OType_PP;
-  gpio_init.GPIO_PuPd = GPIO_PuPd_NOPULL;
-  GPIO_Init(GPIOA, &gpio_init);
-  
-  GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_USART1);
-  GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_USART1);
-  
-  // Initialize USART.
-  USART_InitTypeDef usart_init;
-  usart_init.USART_BaudRate = 9600;
-  usart_init.USART_WordLength = USART_WordLength_8b;
-  usart_init.USART_StopBits = USART_StopBits_1;
-  usart_init.USART_Parity = USART_Parity_No;
-  usart_init.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-  usart_init.USART_Mode = USART_Mode_Tx | USART_Mode_Rx;
-  USART_Init(USART1, &usart_init);
-  
-  USART_Cmd(USART1, ENABLE);
+  // No-op on Elements v0.4 (PA9 is used by SWITCH_MODEL_1).
 }
 
 }  // namespace elements

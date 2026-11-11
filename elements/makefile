@@ -34,7 +34,7 @@ APPLICATION_LARGE = TRUE
 BOOTLOADER        = elements_bootloader
 
 # Preferred upload command
-UPLOAD_COMMAND  = upload_combo_jtag_erase_first
+UPLOAD_COMMAND  = upload_combo_jtag_erase_first_sector
 
 # Packages to build
 TARGET         = elements

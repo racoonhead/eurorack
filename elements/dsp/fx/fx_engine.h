@@ -106,6 +106,10 @@ class FxEngine {
 
   void Init(T* buffer) {
     buffer_ = buffer;
+    Clear();
+  }
+
+  void Clear() {
     std::fill(&buffer_[0], &buffer_[size], 0);
     write_ptr_ = 0;
   }

@@ -54,6 +54,9 @@
 
 namespace elements {
 
+/* static */
+uint16_t CvAdc::values_[CV_ADC_CHANNEL_LAST];
+
 static ADC_HandleTypeDef hadc1;
 static DMA_HandleTypeDef hdma_adc1;
 
@@ -116,7 +119,6 @@ void CvAdc::Init(bool auto_convert) {
   hadc1.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
   hadc1.Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
   hadc1.Init.OversamplingMode = DISABLE;
-  hadc1.Init.BoostMode = ENABLE; // required for ADC clock > 20 MHz
   HAL_ADC_Init(&hadc1);
 
   // Calibrate (offset, single-ended) – mandatory after init on H743.

@@ -66,7 +66,7 @@ class CvAdc {
   }
   
  private:
-  uint16_t values_[CV_ADC_CHANNEL_LAST];
+  static uint16_t values_[CV_ADC_CHANNEL_LAST] __attribute__((section (".dma")));
   
   DISALLOW_COPY_AND_ASSIGN(CvAdc);
 };

@@ -70,6 +70,12 @@ namespace elements {
 /* static */
 Codec* Codec::instance_;
 
+/* static */
+Codec::Frame Codec::tx_dma_buffer_[kAudioChunkSize * 2];
+
+/* static */
+Codec::Frame Codec::rx_dma_buffer_[kAudioChunkSize * 2];
+
 // ---------------------------------------------------------------------------
 // HAL handles (file-scope)
 // ---------------------------------------------------------------------------
@@ -108,20 +114,17 @@ bool Codec::InitializeAudioInterface(
 
   __HAL_RCC_SPI2_CLK_ENABLE();
 
-  hi2s2.Instance              = CODEC_I2S_INSTANCE;
-  hi2s2.Init.Mode             = I2S_MODE_MASTER_TX;   // full-duplex via HAL_I2SEx
-  hi2s2.Init.Standard         = protocol;
-  hi2s2.Init.DataFormat       = format;
-  hi2s2.Init.MCLKOutput       = I2S_MCLKOUTPUT_ENABLE;
-  hi2s2.Init.AudioFreq        = sample_rate;
-  hi2s2.Init.CPOL             = I2S_CPOL_LOW;
-  hi2s2.Init.FirstBit         = I2S_FIRSTBIT_MSB;
-  hi2s2.Init.WSInversion      = I2S_WS_INVERSION_DISABLE;
-  hi2s2.Init.IOSwap           = I2S_IO_SWAP_DISABLE;
-  hi2s2.Init.Data24BitAlignment = I2S_DATA_24BIT_ALIGNMENT_RIGHT;
-  hi2s2.Init.FifoThreshold    = I2S_FIFO_THRESHOLD_01DATA;
-  hi2s2.Init.MasterKeepIOState = I2S_MASTER_KEEP_IO_STATE_DISABLE;
-  hi2s2.Init.SlaveExtendedClockDetection = I2S_SLAVE_EXTENDED_CLOCK_DETECTION_DISABLE;
+  hi2s2.Instance                 = CODEC_I2S_INSTANCE;
+  hi2s2.Init.Mode                = I2S_MODE_MASTER_FULLDUPLEX;
+  hi2s2.Init.Standard            = protocol;
+  hi2s2.Init.DataFormat          = format;
+  hi2s2.Init.MCLKOutput          = I2S_MCLKOUTPUT_ENABLE;
+  hi2s2.Init.AudioFreq           = sample_rate;
+  hi2s2.Init.CPOL                = I2S_CPOL_LOW;
+  hi2s2.Init.FirstBit            = I2S_FIRSTBIT_MSB;
+  hi2s2.Init.WSInversion         = I2S_WS_INVERSION_DISABLE;
+  hi2s2.Init.Data24BitAlignment  = I2S_DATA_24BIT_ALIGNMENT_RIGHT;
+  hi2s2.Init.MasterKeepIOState   = I2S_MASTER_KEEP_IO_STATE_DISABLE;
 
   if (HAL_I2S_Init(&hi2s2) != HAL_OK) {
     return false;
@@ -207,10 +210,17 @@ bool Codec::Start(FillBufferCallback callback) {
   // Expressed in halfwords (each Frame = 2 × short = 2 halfwords).
   const uint16_t dma_size = kAudioChunkSize * 2 * 2; // halfwords
 
-  // HAL_I2SEx_TransmitReceive_DMA starts full-duplex TX + RX simultaneously.
-  HAL_I2SEx_TransmitReceive_DMA(
+  // Arm TX DMA stream and enable SPI2 TX DMA request first, then start RX DMA
+  // via HAL_I2S_Receive_DMA which enables RXDMAEN, SPE, and CSTART simultaneously.
+  HAL_DMA_Start(
+      &hdma_i2s2_tx,
+      reinterpret_cast<uint32_t>(tx_dma_buffer_),
+      reinterpret_cast<uint32_t>(&hi2s2.Instance->TXDR),
+      dma_size);
+  SET_BIT(hi2s2.Instance->CFG1, SPI_CFG1_TXDMAEN);
+
+  HAL_I2S_Receive_DMA(
       &hi2s2,
-      reinterpret_cast<uint16_t*>(tx_dma_buffer_),
       reinterpret_cast<uint16_t*>(rx_dma_buffer_),
       dma_size);
 
@@ -242,18 +252,18 @@ void Codec::Fill(size_t offset) {
 }  // namespace elements
 
 // ---------------------------------------------------------------------------
-// HAL callback overrides (weak symbols in stm32h7xx_hal_i2s_ex.c)
-// Called from DMA IRQ via HAL_DMA_IRQHandler → HAL_I2SEx_TxRx*Callback.
+// HAL callback overrides (weak symbols in stm32h7xx_hal_i2s.c)
+// Called from DMA IRQ via HAL_DMA_IRQHandler → HAL_I2S_Rx*Callback.
 // ---------------------------------------------------------------------------
 extern "C" {
 
-void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef* hi2s) {
+void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef* hi2s) {
   if (hi2s->Instance == SPI2) {
     elements::Codec::GetInstance()->Fill(0);              // first half ready
   }
 }
 
-void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s) {
+void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef* hi2s) {
   if (hi2s->Instance == SPI2) {
     elements::Codec::GetInstance()->Fill(elements::kAudioChunkSize); // second half
   }
@@ -261,11 +271,11 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s) {
 
 // DMA IRQ handlers – forward to HAL.
 void DMA1_Stream0_IRQHandler(void) {   // SPI2_RX
-  HAL_DMA_IRQHandler(&hdma_i2s2_rx);
+  HAL_DMA_IRQHandler(&elements::hdma_i2s2_rx);
 }
 
 void DMA1_Stream1_IRQHandler(void) {   // SPI2_TX
-  HAL_DMA_IRQHandler(&hdma_i2s2_tx);
+  HAL_DMA_IRQHandler(&elements::hdma_i2s2_tx);
 }
 
 }  // extern "C"

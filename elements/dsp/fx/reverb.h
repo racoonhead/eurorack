@@ -31,6 +31,7 @@
 
 #include "stmlib/stmlib.h"
 
+#include "elements/dsp/dsp.h"
 #include "elements/dsp/fx/fx_engine.h"
 
 namespace elements {
@@ -158,6 +159,10 @@ class Reverb {
   
   inline void set_lp(float lp) {
     lp_ = lp;
+  }
+
+  inline void Clear() {
+    engine_.Clear();
   }
   
  private:

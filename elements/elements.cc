@@ -43,7 +43,7 @@ DebugPort debug_port;
 Part part;
 Ui ui;
 
-uint16_t reverb_buffer[32768] __attribute__ ((section (".ccmdata")));
+uint16_t reverb_buffer[32768] __attribute__ ((section (".ramd3")));
 
 // Default interrupt handlers.
 extern "C" {
@@ -57,6 +57,7 @@ void SVC_Handler() { }
 void DebugMon_Handler() { }
 void PendSV_Handler() { }
 void SysTick_Handler() {
+  HAL_IncTick();
   ui.Poll();
   if (debug_port.readable()) {
     uint8_t command = debug_port.Read();
@@ -117,7 +118,7 @@ void Init() {
 
   // Init and seed the random parameters and generators with the serial number.
   part.Init(reverb_buffer);
-  part.Seed((uint32_t*)(0x1fff7a10), 3);
+  part.Seed((uint32_t*)(UID_BASE), 3);
 
   cv_scaler.Init();
   ui.Init(&part, &cv_scaler);

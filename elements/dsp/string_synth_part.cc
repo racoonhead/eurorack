@@ -38,6 +38,8 @@ using namespace stmlib;
 void StringSynthPart::Init(uint16_t* reverb_buffer) {
   active_group_ = 0;
   acquisition_delay_ = 0;
+  clear_fx_ = false;
+  previous_gate_ = false;
   
   polyphony_ = 1;
   fx_type_ = FX_ENSEMBLE;
@@ -48,6 +50,8 @@ void StringSynthPart::Init(uint16_t* reverb_buffer) {
   
   for (int32_t i = 0; i < kMaxStringSynthPolyphony; ++i) {
     group_[i].tonic = 0.0f;
+    group_[i].chord = 0;
+    group_[i].structure = 0.0f;
     group_[i].envelope.Init();
   }
   
@@ -58,8 +62,8 @@ void StringSynthPart::Init(uint16_t* reverb_buffer) {
   limiter_.Init();
   
   reverb_.Init(reverb_buffer);
-  chorus_.Init(reverb_buffer);
-  ensemble_.Init(reverb_buffer);
+  chorus_.Init(fx_buffer_);
+  ensemble_.Init(fx_buffer_);
   
   note_filter_.Init(
       kSampleRate / kMaxBlockSize,
@@ -108,7 +112,7 @@ void StringSynthPart::ComputeRegistration(
 // - more compact, leaving room for a bass
 // - more frequent note changes between adjacent chords.
 // - dropped fifth.
-const float chords[kMaxStringSynthPolyphony][kNumChords][kMaxChordSize] = {
+static const float string_synth_chords[kMaxStringSynthPolyphony][kNumChords][kMaxChordSize] = {
   {
     { -12.0f, -0.01f,  0.0f,  0.01f,  0.02f, 11.99f, 12.0f, 24.0f }, // OCT
     { -12.0f, -5.01f, -5.0f,  0.0f,   7.0f,  12.0f,  19.0f, 24.0f }, // 5
@@ -169,7 +173,7 @@ const float chords[kMaxStringSynthPolyphony][kNumChords][kMaxChordSize] = {
 // - wider, occupies more room in the spectrum.
 // - minimum number of note changes between adjacent chords.
 // - consistent with the chord table used for the sympathetic strings model.
-const float chords[kMaxStringSynthPolyphony][kNumChords][kMaxChordSize] = {
+static const float string_synth_chords[kMaxStringSynthPolyphony][kNumChords][kMaxChordSize] = {
   {
     { -24.0f, -12.0f, 0.0f, 0.01f, 0.02f, 11.99f, 12.0f, 24.0f },
     { -24.0f, -12.0f, 0.0f, 3.0f,  7.0f,  10.0f,  19.0f, 24.0f },
@@ -313,10 +317,16 @@ void StringSynthPart::Process(
     size_t size) {
   // Assign note to a voice.
   uint8_t envelope_flags[kMaxStringSynthPolyphony];
+  bool strum = performance_state.gate && !previous_gate_;
+  previous_gate_ = performance_state.gate;
+
+  int32_t chord_index = static_cast<int32_t>(
+      patch.resonator_geometry * (kNumChords - 1) + 0.5f);
+  CONSTRAIN(chord_index, 0, kNumChords - 1);
   
   fill(&envelope_flags[0], &envelope_flags[polyphony_], 0);
-  note_filter_.Process(performance_state.note, performance_state.strum);
-  if (performance_state.strum) {
+  note_filter_.Process(performance_state.note, strum);
+  if (strum) {
     group_[active_group_].tonic = note_filter_.stable_note();
     envelope_flags[active_group_] = ENVELOPE_FLAG_FALLING_EDGE;
     active_group_ = (active_group_ + 1) % polyphony_;
@@ -327,14 +337,16 @@ void StringSynthPart::Process(
     --acquisition_delay_;
   } else {
     group_[active_group_].tonic = note_filter_.note();
-    group_[active_group_].chord = performance_state.chord;
-    group_[active_group_].structure = patch.structure;
-    envelope_flags[active_group_] |= ENVELOPE_FLAG_GATE;
+    group_[active_group_].chord = chord_index;
+    group_[active_group_].structure = patch.resonator_geometry;
+    if (performance_state.gate) {
+      envelope_flags[active_group_] |= ENVELOPE_FLAG_GATE;
+    }
   }
 
   // Process envelopes.
   float envelope_values[kMaxStringSynthPolyphony];
-  ProcessEnvelopes(patch.damping, envelope_flags, envelope_values);
+  ProcessEnvelopes(patch.resonator_damping, envelope_flags, envelope_values);
   
   copy(&in[0], &in[size], &aux[0]);
   copy(&in[0], &in[size], &out[0]);
@@ -345,12 +357,12 @@ void StringSynthPart::Process(
     
     ComputeRegistration(
         envelope_values[group] * 0.25f,
-        patch.brightness,
+        patch.resonator_brightness,
         harmonics);
     
     // Note enough polyphony for smooth transition between chords.
     for (int32_t i = 0; i < chord_size; ++i) {
-      float n = chords[polyphony_ - 1][group_[group].chord][i];
+      float n = string_synth_chords[polyphony_ - 1][group_[group].chord][i];
       notes[i].note = n;
       notes[i].amplitude = n >= 0.0f && n <= 17.0f ? 1.0f : 0.7f;
     }
@@ -358,8 +370,7 @@ void StringSynthPart::Process(
     for (int32_t chord_note = 0; chord_note < chord_size; ++chord_note) {
       float note = 0.0f;
       note += group_[group].tonic;
-      note += performance_state.tonic;
-      note += performance_state.fm;
+      note += performance_state.modulation;
       note += notes[chord_note].note;
       
       float amplitudes[kNumHarmonics * 2];
@@ -395,7 +406,7 @@ void StringSynthPart::Process(
     case FX_FORMANT:
     case FX_FORMANT_2:
       ProcessFormantFilter(
-          patch.position,
+          patch.resonator_position,
           fx_type_ == FX_FORMANT ? 1.0f : 1.1f,
           fx_type_ == FX_FORMANT ? 25.0f : 10.0f,
           out,
@@ -404,24 +415,24 @@ void StringSynthPart::Process(
       break;
 
     case FX_CHORUS:
-      chorus_.set_amount(patch.position);
-      chorus_.set_depth(0.15f + 0.5f * patch.position);
+      chorus_.set_amount(patch.resonator_position);
+      chorus_.set_depth(0.15f + 0.5f * patch.resonator_position);
       chorus_.Process(out, aux, size);
       break;
     
     case FX_ENSEMBLE:
-      ensemble_.set_amount(patch.position * (2.0f - patch.position));
-      ensemble_.set_depth(0.2f + 0.8f * patch.position * patch.position);
+      ensemble_.set_amount(patch.resonator_position * (2.0f - patch.resonator_position));
+      ensemble_.set_depth(0.2f + 0.8f * patch.resonator_position * patch.resonator_position);
       ensemble_.Process(out, aux, size);
       break;
   
     case FX_REVERB:
     case FX_REVERB_2:
-      reverb_.set_amount(patch.position * 0.5f);
+      reverb_.set_amount(patch.resonator_position * 0.5f);
       reverb_.set_diffusion(0.625f);
       reverb_.set_time(fx_type_ == FX_REVERB
-        ? (0.5f + 0.49f * patch.position)
-        : (0.3f + 0.6f * patch.position));
+        ? (0.5f + 0.49f * patch.resonator_position)
+        : (0.3f + 0.6f * patch.resonator_position));
       reverb_.set_input_gain(0.2f);
       reverb_.set_lp(fx_type_ == FX_REVERB ? 0.3f : 0.6f);
       reverb_.Process(out, aux, size);

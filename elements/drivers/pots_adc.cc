@@ -125,7 +125,6 @@ void PotsAdc::Init() {
   hadc2.Init.Overrun                  = ADC_OVR_DATA_OVERWRITTEN;
   hadc2.Init.LeftBitShift             = ADC_LEFTBITSHIFT_NONE;
   hadc2.Init.OversamplingMode         = DISABLE;
-  hadc2.Init.BoostMode                = ENABLE;
   HAL_ADC_Init(&hadc2);
 
   HAL_ADCEx_Calibration_Start(&hadc2, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
