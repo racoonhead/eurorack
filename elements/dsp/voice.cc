@@ -38,12 +38,14 @@ namespace elements {
 using namespace std;
 using namespace stmlib;
 
-void Voice::Init() {
+void Voice::Init(uint16_t* reverb_buffer) {
   envelope_.Init();
   bow_.Init();
   blow_.Init();
   strike_.Init();
   diffuser_.Init(diffuser_buffer_);
+  fm_voice_.Init();
+  string_synth_.Init(reverb_buffer);
   
   ResetResonator();
 
@@ -220,8 +222,12 @@ void Voice::Process(
 
     // Process through resonator.
     resonator_.Process(bow_strength_buffer_, raw, center, sides, size);
-  } else {
-    size_t num_notes = resonator_model_ == RESONATOR_MODEL_STRING
+  } else if (resonator_model_ == RESONATOR_MODEL_STRING ||
+             resonator_model_ == RESONATOR_MODEL_STRINGS ||
+             resonator_model_ == RESONATOR_MODEL_SYMPATHETIC_STRING_QUANTIZED ||
+             resonator_model_ == RESONATOR_MODEL_STRING_AND_REVERB) {
+    size_t num_notes = (resonator_model_ == RESONATOR_MODEL_STRING ||
+                        resonator_model_ == RESONATOR_MODEL_STRING_AND_REVERB)
         ? 1
         : kNumStrings;
     
@@ -240,7 +246,10 @@ void Voice::Process(
     fill(&center[0], &center[size], 0.0f);
     fill(&sides[0], &sides[size], 0.0f);
     for (size_t i = 0; i < num_notes; ++i) {
-      float transpose = chords[chord_index][i];
+      float transpose = (resonator_model_ == RESONATOR_MODEL_STRINGS ||
+                         resonator_model_ == RESONATOR_MODEL_SYMPATHETIC_STRING_QUANTIZED)
+          ? chords[chord_index][i]
+          : 0.0f;
       string_[i].set_frequency(frequency * SemitonesToRatio(transpose));
       string_[i].set_brightness(patch.resonator_brightness);
       string_[i].set_position(patch.resonator_position);
@@ -259,6 +268,26 @@ void Voice::Process(
       center[i] = left - right;
       sides[i] = left + right;
     }
+  } else if (resonator_model_ == RESONATOR_MODEL_FM_VOICE) {
+    dc_blocker_.Process(raw, size);
+    fm_voice_.set_frequency(frequency);
+    fm_voice_.set_ratio(patch.resonator_geometry);
+    fm_voice_.set_brightness(patch.resonator_brightness);
+    fm_voice_.set_damping(damping);
+    fm_voice_.set_position(patch.resonator_position);
+    fm_voice_.set_feedback_amount(patch.resonator_modulation_offset);
+    if (flags & EXCITER_FLAG_RISING_EDGE) {
+      fm_voice_.TriggerInternalEnvelope();
+    }
+    fm_voice_.Process(raw, center, sides, size);
+  } else if (resonator_model_ == RESONATOR_MODEL_STRING_SYNTH) {
+    dc_blocker_.Process(raw, size);
+    PerformanceState synth_state;
+    synth_state.gate = gate_in;
+    synth_state.note = log2f(frequency / 440.0f) * 12.0f + 69.0f;
+    synth_state.modulation = 0.0f;
+    synth_state.strength = strength_;
+    string_synth_.Process(synth_state, patch, raw, center, sides, size);
   }
 
   // This is where the raw mallet signal bleeds through the exciter output.

@@ -29,7 +29,7 @@
 #ifndef ELEMENTS_DRIVERS_LEDS_H_
 #define ELEMENTS_DRIVERS_LEDS_H_
 
-#include <stm32f4xx_conf.h>
+#include <stm32h7xx_hal.h>
 
 #include "stmlib/stmlib.h"
 

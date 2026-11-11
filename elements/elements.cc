@@ -122,7 +122,7 @@ void Init() {
   cv_scaler.Init();
   ui.Init(&part, &cv_scaler);
   
-  if (!codec.Init(32000, CODEC_PROTOCOL_PHILIPS, CODEC_FORMAT_16_BIT)) {
+  if (!codec.Init(48000, CODEC_PROTOCOL_PHILIPS, CODEC_FORMAT_24_BIT)) {
     ui.Panic();
   }
   if (!codec.Start(&FillBuffer)) {

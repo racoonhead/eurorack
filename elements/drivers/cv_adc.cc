@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -19,109 +19,196 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-// 
+//
 // See http://creativecommons.org/licenses/MIT/ for more information.
 //
 // -----------------------------------------------------------------------------
 //
-// Driver for ADC.
+// Driver for ADC1 – STM32H743 HAL, DMA circular mode.
+//
+// CV channel mapping (ADC1, 16-bit resolution):
+//
+//   Slot  CvAdcChannel                   GPIO  ADC1 channel
+//   ────  ─────────────────────────────  ────  ────────────
+//    1    CV_ADC_V_OCT                   PC2   INP12
+//    2    CV_ADC_FM                      PC1   INP11
+//    3    CV_ADC_PRESSURE                PA0   INP16
+//    4    CV_ADC_EXCITER_BOW_TIMBRE      PA1   INP17
+//    5    CV_ADC_EXCITER_BLOW_META       PA2   INP14
+//    6    CV_ADC_EXCITER_BLOW_TIMBRE     PA3   INP15
+//    7    CV_ADC_EXCITER_STRIKE_META     PA4   INP18
+//    8    CV_ADC_EXCITER_STRIKE_TIMBRE   PA5   INP19
+//    9    CV_ADC_RESONATOR_DAMPING       PA6   INP3
+//   10    CV_ADC_RESONATOR_GEOMETRY      PA7   INP7
+//   11    CV_ADC_RESONATOR_POSITION      PC5   INP8
+//   12    CV_ADC_RESONATOR_BRIGHTNESS    PB0   INP9
+//   13    CV_ADC_SPACE                   PB1   INP5
+//
+//
+// ADC clock: PER_CK = HSE = 8 MHz (async, configured in system.cc).
+// DMA: DMA2_Stream0, DMAMUX1 request DMA_REQUEST_ADC1.
 
 #include "elements/drivers/cv_adc.h"
 
-#include <stm32f4xx_conf.h>
+#include <stm32h7xx_hal.h>
 
 namespace elements {
-  
+
+static ADC_HandleTypeDef hadc1;
+static DMA_HandleTypeDef hdma_adc1;
+
 void CvAdc::Init(bool auto_convert) {
-  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2, ENABLE);
-  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
-  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
-  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
-  
-  DMA_InitTypeDef dma_init;
-  ADC_CommonInitTypeDef adc_common_init;
-  ADC_InitTypeDef adc_init;
-  GPIO_InitTypeDef gpio_init;
-  
-  gpio_init.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3;
-  gpio_init.GPIO_Pin |= GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7;
-  gpio_init.GPIO_PuPd = GPIO_PuPd_NOPULL;
-  gpio_init.GPIO_Mode = GPIO_Mode_AN;
-  GPIO_Init(GPIOA, &gpio_init);
+  // ---- Clock enables -------------------------------------------------------
+  __HAL_RCC_ADC12_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_DMA2_CLK_ENABLE();
 
-  gpio_init.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1;
-  gpio_init.GPIO_PuPd = GPIO_PuPd_NOPULL;
-  gpio_init.GPIO_Mode = GPIO_Mode_AN;
-  GPIO_Init(GPIOB, &gpio_init);
+  // ---- GPIO: analog inputs -------------------------------------------------
+  GPIO_InitTypeDef gpio = {};
+  gpio.Mode = GPIO_MODE_ANALOG;
+  gpio.Pull = GPIO_NOPULL;
 
-  gpio_init.GPIO_Pin = GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_5;
-  gpio_init.GPIO_PuPd = GPIO_PuPd_NOPULL;
-  gpio_init.GPIO_Mode = GPIO_Mode_AN;
-  GPIO_Init(GPIOC, &gpio_init);
-  
-  // Use DMA to automatically copy ADC data register to values_ buffer.
-  dma_init.DMA_Channel = DMA_Channel_0;
-  dma_init.DMA_PeripheralBaseAddr = (uint32_t)&ADC1->DR; 
-  dma_init.DMA_Memory0BaseAddr = (uint32_t)&values_[0]; 
-  dma_init.DMA_DIR = DMA_DIR_PeripheralToMemory;
-  dma_init.DMA_BufferSize = CV_ADC_CHANNEL_LAST; 
-  dma_init.DMA_PeripheralInc = DMA_PeripheralInc_Disable; 
-  dma_init.DMA_MemoryInc = DMA_MemoryInc_Enable; 
-  dma_init.DMA_PeripheralDataSize = DMA_PeripheralDataSize_HalfWord; 
-  dma_init.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord; 
-  dma_init.DMA_Mode = DMA_Mode_Circular; 
-  dma_init.DMA_Priority = DMA_Priority_High;
-  dma_init.DMA_FIFOMode = DMA_FIFOMode_Disable;         
-  dma_init.DMA_FIFOThreshold = DMA_FIFOThreshold_HalfFull;
-  dma_init.DMA_MemoryBurst = DMA_MemoryBurst_Single;
-  dma_init.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
-  DMA_Init(DMA2_Stream0, &dma_init);
-  DMA_Cmd(DMA2_Stream0, ENABLE);
-  
-  adc_common_init.ADC_Mode = ADC_Mode_Independent;
-  adc_common_init.ADC_Prescaler = ADC_Prescaler_Div8;
-  adc_common_init.ADC_DMAAccessMode = ADC_DMAAccessMode_Disabled;
-  adc_common_init.ADC_TwoSamplingDelay = ADC_TwoSamplingDelay_5Cycles;
-  ADC_CommonInit(&adc_common_init);
-  
-  adc_init.ADC_Resolution = ADC_Resolution_12b;
-  adc_init.ADC_ScanConvMode = ENABLE;
-  adc_init.ADC_ContinuousConvMode = auto_convert ? ENABLE : DISABLE;
-  adc_init.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T1_CC1;
-  adc_init.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_None;
-  adc_init.ADC_DataAlign = ADC_DataAlign_Left;
-  adc_init.ADC_NbrOfConversion = CV_ADC_CHANNEL_LAST;
-  ADC_Init(ADC1, &adc_init);
-  
-  // 168M / 2 / 8 / (3 x (480 + 5) + 10 x (144 + 5)) = 3.5kHz.
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_12, 1, ADC_SampleTime_480Cycles);
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_13, 2, ADC_SampleTime_480Cycles); 
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_0, 3, ADC_SampleTime_480Cycles); 
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 4, ADC_SampleTime_144Cycles); 
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_2, 5, ADC_SampleTime_144Cycles);
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_3, 6, ADC_SampleTime_144Cycles); 
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_4, 7, ADC_SampleTime_144Cycles); 
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_5, 8, ADC_SampleTime_144Cycles); 
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_6, 9, ADC_SampleTime_144Cycles);
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_7, 10, ADC_SampleTime_144Cycles); 
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_15, 11, ADC_SampleTime_144Cycles); 
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_8, 12, ADC_SampleTime_144Cycles); 
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_9, 13, ADC_SampleTime_144Cycles); 
-  
-  ADC_DMARequestAfterLastTransferCmd(ADC1, ENABLE);
-  ADC_Cmd(ADC1, ENABLE);
-  ADC_DMACmd(ADC1, ENABLE);
-  Convert();
+  // PA0–PA7
+  gpio.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_4 |
+             GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
+  HAL_GPIO_Init(GPIOA, &gpio);
+
+  // PB0, PB1
+  gpio.Pin = GPIO_PIN_0 | GPIO_PIN_1;
+  HAL_GPIO_Init(GPIOB, &gpio);
+
+  // PC1 (ADC_FM = ADC1_INP11), PC2 (ADC_V_OCT = ADC1_INP12), PC5 (ADC_POSITION
+  // = ADC1_INP8)
+  gpio.Pin = GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_5;
+  HAL_GPIO_Init(GPIOC, &gpio);
+
+  // ---- DMA -----------------------------------------------------------------
+  // DMA2_Stream0, DMAMUX1 → ADC1
+  hdma_adc1.Instance = DMA2_Stream0;
+  hdma_adc1.Init.Request = DMA_REQUEST_ADC1;
+  hdma_adc1.Init.Direction = DMA_PERIPH_TO_MEMORY;
+  hdma_adc1.Init.PeriphInc = DMA_PINC_DISABLE;
+  hdma_adc1.Init.MemInc = DMA_MINC_ENABLE;
+  hdma_adc1.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD; // 16-bit ADC
+  hdma_adc1.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+  hdma_adc1.Init.Mode = DMA_CIRCULAR;
+  hdma_adc1.Init.Priority = DMA_PRIORITY_HIGH;
+  hdma_adc1.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+  HAL_DMA_Init(&hdma_adc1);
+  __HAL_LINKDMA(&hadc1, DMA_Handle, hdma_adc1);
+
+  // ---- ADC init ------------------------------------------------------------
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1; // 8 MHz (PER_CK=HSE)
+  hadc1.Init.Resolution = ADC_RESOLUTION_16B;
+  hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
+  hadc1.Init.LowPowerAutoWait = DISABLE;
+  hadc1.Init.ContinuousConvMode = auto_convert ? ENABLE : DISABLE;
+  hadc1.Init.NbrOfConversion = CV_ADC_CHANNEL_LAST;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.NbrOfDiscConversion = 1;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DMA_CIRCULAR;
+  hadc1.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
+  hadc1.Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
+  hadc1.Init.OversamplingMode = DISABLE;
+  hadc1.Init.BoostMode = ENABLE; // required for ADC clock > 20 MHz
+  HAL_ADC_Init(&hadc1);
+
+  // Calibrate (offset, single-ended) – mandatory after init on H743.
+  HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
+
+  // ---- Channel sequence ----------------------------------------------------
+  // Long sampling time (387.5 cy @ 8 MHz ≈ 49 µs/ch) → ~650 µs for 13 ch.
+  ADC_ChannelConfTypeDef ch = {};
+  ch.SamplingTime = ADC_SAMPLETIME_387CYCLES_5;
+  ch.SingleDiff = ADC_SINGLE_ENDED;
+  ch.OffsetNumber = ADC_OFFSET_NONE;
+  ch.Offset = 0;
+
+  // Slot 1 – CV_ADC_V_OCT – PC2 = ADC1_INP12
+  ch.Channel = ADC_CHANNEL_12;
+  ch.Rank = ADC_REGULAR_RANK_1;
+  HAL_ADC_ConfigChannel(&hadc1, &ch);
+
+  // Slot 2 – CV_ADC_FM – PC1 = ADC1_INP11
+  ch.Channel = ADC_CHANNEL_11;
+  ch.Rank = ADC_REGULAR_RANK_2;
+  HAL_ADC_ConfigChannel(&hadc1, &ch);
+
+  // Slot 3 – CV_ADC_PRESSURE – PA0 = ADC1_INP16
+  ch.Channel = ADC_CHANNEL_16;
+  ch.Rank = ADC_REGULAR_RANK_3;
+  HAL_ADC_ConfigChannel(&hadc1, &ch);
+
+  // Slot 4 – CV_ADC_EXCITER_BOW_TIMBRE – PA1 = ADC1_INP17
+  ch.Channel = ADC_CHANNEL_17;
+  ch.Rank = ADC_REGULAR_RANK_4;
+  HAL_ADC_ConfigChannel(&hadc1, &ch);
+
+  // Slot 5 – CV_ADC_EXCITER_BLOW_META – PA2 = ADC1_INP14
+  ch.Channel = ADC_CHANNEL_14;
+  ch.Rank = ADC_REGULAR_RANK_5;
+  HAL_ADC_ConfigChannel(&hadc1, &ch);
+
+  // Slot 6 – CV_ADC_EXCITER_BLOW_TIMBRE – PA3 = ADC1_INP15
+  ch.Channel = ADC_CHANNEL_15;
+  ch.Rank = ADC_REGULAR_RANK_6;
+  HAL_ADC_ConfigChannel(&hadc1, &ch);
+
+  // Slot 7 – CV_ADC_EXCITER_STRIKE_META – PA4 = ADC1_INP18
+  ch.Channel = ADC_CHANNEL_18;
+  ch.Rank = ADC_REGULAR_RANK_7;
+  HAL_ADC_ConfigChannel(&hadc1, &ch);
+
+  // Slot 8 – CV_ADC_EXCITER_STRIKE_TIMBRE – PA5 = ADC1_INP19
+  ch.Channel = ADC_CHANNEL_19;
+  ch.Rank = ADC_REGULAR_RANK_8;
+  HAL_ADC_ConfigChannel(&hadc1, &ch);
+
+  // Slot 9 – CV_ADC_RESONATOR_DAMPING – PA6 = ADC1_INP3
+  ch.Channel = ADC_CHANNEL_3;
+  ch.Rank = ADC_REGULAR_RANK_9;
+  HAL_ADC_ConfigChannel(&hadc1, &ch);
+
+  // Slot 10 – CV_ADC_RESONATOR_GEOMETRY – PA7 = ADC1_INP7
+  ch.Channel = ADC_CHANNEL_7;
+  ch.Rank = ADC_REGULAR_RANK_10;
+  HAL_ADC_ConfigChannel(&hadc1, &ch);
+
+  // Slot 11 – CV_ADC_RESONATOR_POSITION – PC5 = ADC1_INP8
+  ch.Channel = ADC_CHANNEL_8;
+  ch.Rank = ADC_REGULAR_RANK_11;
+  HAL_ADC_ConfigChannel(&hadc1, &ch);
+
+  // Slot 12 – CV_ADC_RESONATOR_BRIGHTNESS – PB0 = ADC1_INP9
+  ch.Channel = ADC_CHANNEL_9;
+  ch.Rank = ADC_REGULAR_RANK_12;
+  HAL_ADC_ConfigChannel(&hadc1, &ch);
+
+  // Slot 13 – CV_ADC_SPACE – PB1 = ADC1_INP5
+  ch.Channel = ADC_CHANNEL_5;
+  ch.Rank = ADC_REGULAR_RANK_13;
+  HAL_ADC_ConfigChannel(&hadc1, &ch);
+
+  // ---- Start DMA -----------------------------------------------------------
+  HAL_ADC_Start_DMA(&hadc1, reinterpret_cast<uint32_t *>(values_),
+                    CV_ADC_CHANNEL_LAST);
 }
 
 void CvAdc::DeInit() {
-  ADC_DeInit();
+  HAL_ADC_Stop_DMA(&hadc1);
+  HAL_ADC_DeInit(&hadc1);
+  HAL_DMA_DeInit(&hdma_adc1);
 }
 
 void CvAdc::Convert() {
-  ADC_SoftwareStartConv(ADC1);
+  HAL_ADC_Start_DMA(&hadc1, reinterpret_cast<uint32_t *>(values_),
+                    CV_ADC_CHANNEL_LAST);
 }
 
-
-}  // namespace elements
+} // namespace elements

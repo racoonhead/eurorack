@@ -92,7 +92,7 @@ void CvScaler::Init() {
     SaveCalibration();
   }
   
-  CONSTRAIN(calibration_settings_.resonator_model, 0, 2);
+  CONSTRAIN(calibration_settings_.resonator_model, 0, 6);
   
   note_ = 0.0f;
   modulation_ = 0.0f;

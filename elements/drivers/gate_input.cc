@@ -24,12 +24,12 @@
 //
 // -----------------------------------------------------------------------------
 //
-// Driver for the gate input.
+// Driver for the gate input – STM32H743 HAL GPIO.
+// PC4, active-low (pull-up, inverted on read).
 
 #include "elements/drivers/gate_input.h"
 
-#include <stm32f4xx_conf.h>
-
+#include <stm32h7xx_hal.h>
 #include <algorithm>
 
 namespace elements {
@@ -37,19 +37,18 @@ namespace elements {
 using namespace std;
 
 void GateInput::Init() {
-  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
-  
-  GPIO_InitTypeDef gpio_init;
-  gpio_init.GPIO_Pin = GPIO_Pin_4;
-  gpio_init.GPIO_Mode = GPIO_Mode_IN;
-  gpio_init.GPIO_OType = GPIO_OType_PP;
-  gpio_init.GPIO_Speed = GPIO_Speed_2MHz;
-  gpio_init.GPIO_PuPd = GPIO_PuPd_UP;
-  GPIO_Init(GPIOC, &gpio_init);
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+
+  GPIO_InitTypeDef gpio = {};
+  gpio.Pin   = GPIO_PIN_4;
+  gpio.Mode  = GPIO_MODE_INPUT;
+  gpio.Speed = GPIO_SPEED_FREQ_LOW;
+  gpio.Pull  = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOC, &gpio);
 }
 
 bool GateInput::Read() {
-  return !GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_4);
+  return HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_4) == GPIO_PIN_RESET; // active-low
 }
 
 }  // namespace elements

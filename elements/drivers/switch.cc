@@ -24,33 +24,65 @@
 //
 // -----------------------------------------------------------------------------
 //
-// Driver for the front panel switch.
+// Driver for front panel switches – STM32H743 HAL GPIO.
+//   PC13: SW_PLAY / SW_GATE (active-low, pull-up)
+//   PA9:  SW_MODEL_1 (active-high 3.3V, pull-down)
+//   PE9:  SW_MODEL_2 (active-high 3.3V, pull-down)
 
 #include "elements/drivers/switch.h"
 
+#include <stm32h7xx_hal.h>
 #include <algorithm>
 
 namespace elements {
 
 using namespace std;
 
-void Switch::Init() {
-  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
-  
-  GPIO_InitTypeDef gpio_init;
-  gpio_init.GPIO_Pin = GPIO_Pin_1;
-  gpio_init.GPIO_Mode = GPIO_Mode_IN;
-  gpio_init.GPIO_OType = GPIO_OType_PP;
-  gpio_init.GPIO_Speed = GPIO_Speed_2MHz;
-  gpio_init.GPIO_PuPd = GPIO_PuPd_UP;
-  GPIO_Init(GPIOC, &gpio_init);
+void Switches::Init() {
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOE_CLK_ENABLE();
 
-  switch_state_ = 0xff;
+  GPIO_InitTypeDef gpio = {};
+
+  // PC13: active-low (SW_GATE) with pull-up
+  gpio.Pin   = GPIO_PIN_13;
+  gpio.Mode  = GPIO_MODE_INPUT;
+  gpio.Speed = GPIO_SPEED_FREQ_LOW;
+  gpio.Pull  = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOC, &gpio);
+
+  // PA9: active-high (3.3V) with pull-down
+  gpio.Pin   = GPIO_PIN_9;
+  gpio.Mode  = GPIO_MODE_INPUT;
+  gpio.Speed = GPIO_SPEED_FREQ_LOW;
+  gpio.Pull  = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOA, &gpio);
+
+  // PE9: active-high (3.3V) with pull-down
+  gpio.Pin   = GPIO_PIN_9;
+  gpio.Mode  = GPIO_MODE_INPUT;
+  gpio.Speed = GPIO_SPEED_FREQ_LOW;
+  gpio.Pull  = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOE, &gpio);
+
+  switch_state_[0] = 0xff;
+  switch_state_[1] = 0xff;
+  switch_state_[2] = 0xff;
 }
 
-void Switch::Debounce() {
-  switch_state_ = (switch_state_ << 1) | \
-      GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_1);
+void Switches::Debounce() {
+  // PC13: active-low (0 when pressed -> 0 in state bit)
+  switch_state_[0] = (switch_state_[0] << 1) |
+      (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == GPIO_PIN_SET ? 1 : 0);
+
+  // PA9: active-high (1 when pressed -> 0 in state bit when pressed)
+  switch_state_[1] = (switch_state_[1] << 1) |
+      (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_9) == GPIO_PIN_SET ? 0 : 1);
+
+  // PE9: active-high (1 when pressed -> 0 in state bit when pressed)
+  switch_state_[2] = (switch_state_[2] << 1) |
+      (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_9) == GPIO_PIN_SET ? 0 : 1);
 }
 
 }  // namespace elements

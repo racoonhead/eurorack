@@ -24,9 +24,10 @@
 
 # System specifications
 F_CRYSTAL      = 8000000L
-F_CPU          = 168000000L
-SYSCLOCK       = SYSCLK_FREQ_168MHz
-FAMILY         = f4xx
+F_CPU          = 480000000L
+SYSCLOCK       = SYSCLK_FREQ_480MHz
+FAMILY         = h7xx
+HSE_VALUE      = 8000000
 # USB            = enabled
 
 APPLICATION_LARGE = TRUE
@@ -52,5 +53,5 @@ include stmlib/makefile.inc
 # Rule for building the firmware update file
 wav:  $(TARGET_BIN)
 	python stm_audio_bootloader/qpsk/encoder.py \
-		-t stm32f4 -s 48000 -b 12000 -c 6000 -p 256 \
+		-t stm32h7 -k -s 48000 -b 12000 -c 6000 -p 256 \
 		$(TARGET_BIN)

@@ -62,7 +62,7 @@ void Part::Init(uint16_t* reverb_buffer) {
   fill(&note_[0], &note_[kNumVoices], 69.0f);
   
   for (size_t i = 0; i < kNumVoices; ++i) {
-    voice_[i].Init();
+    voice_[i].Init(reverb_buffer);
     ominous_voice_[i].Init();
   }
   

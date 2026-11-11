@@ -75,11 +75,19 @@ void Ui::Poll() {
     }
   }
   
-  if (switch_.released() && press_time_) {
+  if (switch_.released(SWITCH_PLAY) && press_time_) {
     queue_.AddEvent(
         CONTROL_SWITCH,
         0,
         system_clock.milliseconds() - press_time_ + 1);
+  }
+  
+  if (switch_.just_pressed(SWITCH_MODEL_1)) {
+    queue_.AddEvent(CONTROL_SWITCH, 4, 0);
+  }
+
+  if (switch_.just_pressed(SWITCH_MODEL_2)) {
+    queue_.AddEvent(CONTROL_SWITCH, 5, 0);
   }
   
   bool blink = (system_clock.milliseconds() & 127) > 64;
@@ -113,7 +121,7 @@ void Ui::Poll() {
     case UI_MODE_DISPLAY_MODEL:
       {
         bool blink = (system_clock.milliseconds() & 255) > 128;
-        uint8_t count = ((system_clock.milliseconds()) >> 8) & 3;
+        uint8_t count = ((system_clock.milliseconds()) >> 8) & 7;
         bool pulse = (count <= part_->resonator_model()) && blink;
         leds_.set_gate(pulse);
         leds_.set_exciter(pulse ? 255 : 0);
@@ -159,8 +167,9 @@ void Ui::OnSwitchPressed(const Event& e) {
       break;
     
     case 3:
+    case 4:
       part_->set_resonator_model(
-          ResonatorModel((part_->resonator_model() + 1) % 3));
+          ResonatorModel((part_->resonator_model() + 1) % 7));
       cv_scaler_->set_resonator_model(part_->resonator_model());
       cv_scaler_->SaveCalibration();
       gate_ = false;

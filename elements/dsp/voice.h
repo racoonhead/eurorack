@@ -40,6 +40,8 @@
 #include "elements/dsp/resonator.h"
 #include "elements/dsp/string.h"
 #include "elements/dsp/tube.h"
+#include "elements/dsp/fm_voice.h"
+#include "elements/dsp/string_synth_part.h"
 
 #include "elements/dsp/fx/diffuser.h"
 
@@ -48,9 +50,14 @@ namespace elements {
 const size_t kNumStrings = 5;
 
 enum ResonatorModel {
-  RESONATOR_MODEL_MODAL,
-  RESONATOR_MODEL_STRING,
-  RESONATOR_MODEL_STRINGS,
+  RESONATOR_MODEL_MODAL,                          // 0: Original Elements Modal
+  RESONATOR_MODEL_STRING,                         // 1: Original Elements Single String
+  RESONATOR_MODEL_STRINGS,                        // 2: Original Elements Sympathetic Strings
+  RESONATOR_MODEL_SYMPATHETIC_STRING_QUANTIZED,   // 3: Rings Quantized Sympathetic Chords
+  RESONATOR_MODEL_STRING_AND_REVERB,              // 4: Rings String + Reverb
+  RESONATOR_MODEL_FM_VOICE,                       // 5: Rings 2-Op FM Synth Voice
+  RESONATOR_MODEL_STRING_SYNTH,                   // 6: Rings String Synth / Solina Ensemble
+  RESONATOR_MODEL_LAST
 };
 
 class Voice {
@@ -58,7 +65,7 @@ class Voice {
   Voice() { }
   ~Voice() { }
   
-  void Init();
+  void Init(uint16_t* reverb_buffer = NULL);
   void Process(
       const Patch& patch,
       float frequency,
@@ -103,6 +110,8 @@ class Voice {
   Diffuser diffuser_;
   Resonator resonator_;
   String string_[kNumStrings];
+  FMVoice fm_voice_;
+  StringSynthPart string_synth_;
   stmlib::DCBlocker dc_blocker_;
   
   float strength_;

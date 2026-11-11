@@ -27,7 +27,7 @@
 using namespace elements;
 using namespace stmlib;
 
-const uint32_t kSampleRate = 32000;
+const uint32_t kSampleRate = 48000;
 const uint16_t kAudioBlockSize = 32;
 
 void write_wav_header(FILE* fp, int num_samples, int num_channels) {

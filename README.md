@@ -1,53 +1,97 @@
-Mutable Instruments' Eurorack Modules.
+# Mutable Instruments – Eurorack Modules
 
-* [Beads](http://mutable-instruments.net/modules/beads): Texture synthesizer (1).
-* [Blades](http://mutable-instruments.net/modules/blades): Dual multimode filter.
-* [Blinds](http://mutable-instruments.net/modules/blinds): Quad VC-polarizer.
-* [Braids](http://mutable-instruments.net/modules/braids): Macro-oscillator.
-* [Branches](http://mutable-instruments.net/modules/branches): Dual Bernoulli gate.
-* [Clouds](http://mutable-instruments.net/modules/clouds): Texture synthesizer.
-* [Ears](http://mutable-instruments.net/modules/ears): Contact microphone.
-* [Edges](http://mutable-instruments.net/modules/edges): Quad chiptune digital oscillator.
-* [Elements](http://mutable-instruments.net/modules/elements): Modal synthesizer.
-* [Frames](http://mutable-instruments.net/modules/frames): Keyframer/mixer.
-* [Grids](http://mutable-instruments.net/modules/grids): Topographic drum sequencer.
-* [Kinks](http://mutable-instruments.net/modules/kinks): Utility module - rectifier, analog logic, S&H, noise.
-* [Links](http://mutable-instruments.net/modules/links): Utility module - buffer, mixer.
-* [Marbles](http://mutable-instruments.net/modules/marbles): Random sampler.
-* [Peaks](http://mutable-instruments.net/modules/peaks): Dual trigger converter.
-* [Plaits](http://mutable-instruments.net/modules/plaits): Macro oscillator.
-* [Rings](http://mutable-instruments.net/modules/rings): Resonator.
-* [Ripples](http://mutable-instruments.net/modules/ripples): Liquid 2-pole BP, 2-pole LP and 4-pole LP filter.
-* [Shades](http://mutable-instruments.net/modules/shades): Triple attenuverter.
-* [Shelves](http://mutable-instruments.net/modules/shelves): EQ filter.
-* [Stages](http://mutable-instruments.net/modules/stages): Segment generator.
-* [Streams](http://mutable-instruments.net/modules/streams): Dual dynamics gate.
-* [Tides](http://mutable-instruments.net/modules/tides): Tidal modulator.
-* [Veils](http://mutable-instruments.net/modules/veils): Quad VCA.
-* [Volts](http://mutable-instruments.net/modules/volts): +5V power module.
-* [Warps](http://mutable-instruments.net/modules/warps): Meta-modulator.
-* [Yarns](http://mutable-instruments.net/modules/yarns): MIDI interface.
+Open-source firmware a hardwarové podklady pro modulární syntezátory **Mutable Instruments** v prostředí Eurorack, včetně rozšířené revize modulu **Elements (v0.4)**.
 
-(1) Code provided as is, builds on a Desktop platform but not verified to build and run on a module. Install at your own risks.
+---
 
-License
-=======
+## 🌟 Speciální revize: Elements v0.4 (STM32H743 Edition)
 
-Code (AVR projects): GPL3.0.
+Tento repozitář obsahuje modernizovanou hardwarovou i firmwarovou revizi modulu **Elements (v0.4)**, která původní platformu výrazně posouvá po stránce výpočetního výkonu, audio kvality i zvukových možností.
 
-Code (STM32F projects): MIT license.
+### Hlavní vylepšení Elements v0.4:
+* **Výpočetní jádro (MCU):** Přechod z původního STM32F405 (Cortex-M4F @ 168 MHz) na extrémně výkonný **ARM Cortex-M7 (STM32H743VIT6 @ 480 MHz)** s 2 MB Flash a 1 MB RAM.
+* **Audio převodník (Codec):** 24-bitový **TI PCM3060** v hardwarovém režimu (bez nutnosti I2C inicializace) se vzorkovací frekvencí 48 kHz a výstupními operačními zesilovači **TI OPA1664D** pro nižší šumové dno.
+* **Přesnější převod CV:** 16-bitové SAR ADC pro 1V/Oct a CV vstupy (16× vyšší rozlišení oproti původním 12 bitům) a jemnější snímání potenciometrů.
+* **Rozšířený exciter engine (2 režimy):** 
+  * *1: Classic* (původní modely Bow, Blow, Strike)
+  * *2: Industrial* (metal friction, digital burst a industrial sample set)
+* **Rozšířený rezonátor (8 modelů):**
+  * Původní modely Elements (Modal, String, Chords)
+  * Portované modely z modulu Rings
+  * Implementace Kammerl Spectral Clouds
+* **Ovládací prvky:** Přidána dedikovaná hardwarová tlačítka pro přímý výběr Exciter a Resonator modelů.
+* **Panel:** Podpora pro dvoudílný dělený panel (20 HP Exciter + 14 HP Resonator) i jednotný 34 HP monolitický černý panel (KiCad v8/v10).
 
-Hardware: cc-by-sa-3.0
+> Detailní technickou dokumentaci a schémata naleznete přímo v adresáři [`elements/`](elements/) (popř. [`elements/README.md`](elements/README.md)).
 
-By: Emilie Gillet (emilie.o.gillet@gmail.com)
+---
 
-Guidelines for derivative works
-===============================
+## 🎹 Seznam modulů v repozitáři
 
-**Mutable Instruments is a registered trademark.**
+### Digitální syntéza a zpracování zvuku (STM32)
+* **[Elements](elements/):** Modální syntetizér fyzikálního modelování (ve verzi v0.4 na STM32H7).
+* **[Beads](beads/):** Granulární texturovací syntetizér nové generace (STM32H7).
+* **[Clouds](clouds/):** Granulární texturovací procesor v reálném čase.
+* **[Plaits](plaits/):** Všestranný makro-oscilátor (16 syntetických modelů).
+* **[Rings](rings/):** Resonátor a fyzikální modelování strun/membrán.
+* **[Braids](braids/):** Digitální makro-oscilátor s bohatou paletou vlnových průběhů.
+* **[Warps](warps/):** Meta-modulátor, crossfader, wavefolder a kruhový modulátor.
+* **[Tides](tides/) / [Tides 2](tides2/):** Přílivový generátor funkcí, LFO a audio oscilátor.
+* **[Stages](stages/):** Pokročilý segmentový generátor obálek a modulací.
+* **[Marbles](marbles/):** Generátor náhodných napětí, rytmů a kvantizovaných sekvencí.
+* **[Frames](frames/):** Maticový keyframer a digitálně řízený mixer.
+* **[Yarns](yarns/):** Vícehlasý MIDI interface a sekvencer.
 
-The name "Mutable Instruments" should not be used on any of the derivative works you create from these files.
+### Analogové a hybridní moduly
+* **[Blades](blades/):** Duální analogový multimódový filtr s plynulým přechodem a wavefolderem.
+* **[Ripples](ripples/):** Kapalinový analogový 2-pole a 4-pole filtr.
+* **[Veils](veils/):** Čtyřnásobný VCA s nastavitelnou exponenciální/lineární křivkou.
+* **[Blinds](blinds/):** Čtyřnásobný čtyřkvadrantový násobič / polarizér.
+* **[Shelves](shelves/):** Parametrický 4-pásmový ekvalizér.
+* **[Ears](ears/):** Kontaktní mikrofon s obálkovým sledovačem a gate detektorem.
 
-We do not recommend you to keep the original name of the Mutable Instruments module for your derivative works.
+### AVR moduly (8-bitové mikrokontroléry)
+* **[Peaks](peaks/):** Duální multifunkční bicí generátor, obálka a LFO.
+* **[Grids](grids/):** Topografický generátor bicích rytmů založený na mapách.
+* **[Branches](branches/):** Duální Bernoulliho gate s pravděpodobnostním směrováním.
+* **[Edges](edges/):** Čtyřhlasý chiptune oscilátor.
 
-For example, your 5U adaptation of Mutable Instruments Clouds can be called "Foobar Modular - Particle Generator".
+### Pasivní a pomocné moduly
+* **[Links](links/):** Bufferovaný distributor a sčítací mix.
+* **[Kinks](kinks/):** Usměrňovač, analogová logika (max/min) a Sample & Hold.
+* **[Shades](shades/):** Trojitý atenuátor a offset generátor.
+* **[Volts](volts/):** Převodník napájení +5V.
+
+---
+
+## 🛠️ Kompilace firmwaru
+
+Pro pohodlnou kompilaci bez konfliktů závislostí využijte připravené prostředí v sousedním adresáři [`mutable-dev-environment`](../mutable-dev-environment/):
+
+* **Raspberry Pi 5 (Manjaro ARM) / moderní Linux:** Spusťte `./setup-manjaro.sh` a kompilujte nativním `arm-none-eabi-gcc`.
+* **Docker:** Spusťte `./docker-build.sh <modul>`.
+* **x86 Manjaro / Vagrant:** Pro starší moduly vyžadující přesný toolchain GCC 4.8.3.
+
+Příklad kompilace modulu z kořenové složky `eurorack`:
+```bash
+# Kompilace Elements v0.4:
+make -j4 -f elements/makefile
+
+# Kompilace Clouds nebo Plaits:
+make -j4 -f clouds/makefile
+make -j4 -f plaits/makefile
+
+# Vytvoření audio bootloader WAV souboru:
+make -f elements/makefile wav
+```
+
+---
+
+## 📄 Licence a ochranné známky
+
+* **Kód (STM32 projekty):** MIT License
+* **Kód (AVR projekty):** GPL v3.0
+* **Hardware design:** Creative Commons CC-BY-SA-3.0
+* **Původní autor:** Émilie Gillet (pichenettes)
+
+> **Upozornění k ochranné známce:** *Mutable Instruments* je registrovaná ochranná známka. Název nesmí být používán pro komerční odvozená díla bez souhlasu.

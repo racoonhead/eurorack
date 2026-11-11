@@ -24,46 +24,59 @@
 //
 // -----------------------------------------------------------------------------
 //
-// Driver for the front panel switch.
+// Driver for front panel switches – STM32H743 HAL GPIO.
+//   PC13: SW_PLAY / SW_GATE (active-low, pull-up)
+//   PA9:  SW_MODEL_1 (active-high 3.3V, pull-down)
+//   PE9:  SW_MODEL_2 (active-high 3.3V, pull-down)
 
 #ifndef ELEMENTS_DRIVERS_SWITCH_H_
 #define ELEMENTS_DRIVERS_SWITCH_H_
 
 #include "stmlib/stmlib.h"
 
-#include <stm32f4xx_conf.h>
+#include <stm32h7xx_hal.h>
 
 namespace elements {
 
-class Switch {
+enum SwitchIndex {
+  SWITCH_PLAY,      // PC13 (SW_GATE)
+  SWITCH_MODEL_1,   // PA9
+  SWITCH_MODEL_2,   // PE9
+  SWITCH_LAST
+};
+
+class Switches {
  public:
-  Switch() { }
-  ~Switch() { }
+  Switches() { }
+  ~Switches() { }
   
   void Init();
   void Debounce();
   
-  inline bool released() const {
-    return switch_state_ == 0x7f;
+  inline bool released(size_t index) const {
+    return switch_state_[index] == 0x7f;
   }
   
-  inline bool just_pressed() const {
-    return switch_state_ == 0x80;
+  inline bool just_pressed(size_t index) const {
+    return switch_state_[index] == 0x80;
   }
 
-  inline bool pressed() const {
-    return switch_state_ == 0x00;
+  inline bool pressed(size_t index) const {
+    return switch_state_[index] == 0x00;
   }
-  
-  inline bool pressed_immediate() const {
-    return !GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_1);
-  }
-  
+
+  // Compatibility methods for default switch (SWITCH_PLAY)
+  inline bool released() const { return released(SWITCH_PLAY); }
+  inline bool just_pressed() const { return just_pressed(SWITCH_PLAY); }
+  inline bool pressed() const { return pressed(SWITCH_PLAY); }
+
  private:
-  uint8_t switch_state_;
+  uint8_t switch_state_[3];
   
-  DISALLOW_COPY_AND_ASSIGN(Switch);
+  DISALLOW_COPY_AND_ASSIGN(Switches);
 };
+
+typedef Switches Switch;
 
 }  // namespace elements
 
