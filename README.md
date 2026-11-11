@@ -43,7 +43,7 @@ Hardware and firmware revision (**v0.4**) of the [Elements](elements/) modal syn
 * **Signal Acquisition:** 16-bit SAR ADCs for 1V/Oct, CV inputs, and multiplexed potentiometers.
 * **Exciter Engine:** 2 selectable modes – *Classic* (Bow, Blow, Strike) and *Industrial* (Friction, Burst, Samples).
 * **Resonator Engine:** 8 resonator models (3 original Elements models, 4 ported Rings models, and Kammerl Spectral Clouds).
-* **Controls & Hardware:** Dedicated hardware tactile switches for Exciter and Resonator model selection; KiCad v8/v10 schematics and PCB layouts (34 HP unified and 20 HP + 14 HP split front panel options).
+* **Controls & Hardware:** Dedicated hardware tactile switches for Exciter and Resonator model selection; KiCad v8/v10 schematics and PCB layouts with a dual-tone split front panel (20 HP Exciter + 14 HP Resonator).
 
 Full documentation and design files are located in [`elements/README.md`](elements/README.md).
 

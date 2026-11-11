@@ -13,7 +13,7 @@ Hardware and firmware revision (**v0.4**) of the **Mutable Instruments Elements*
 
 ## Front Panel Design (Decøy Devices Edition)
 
-### 1. Dual-Tone Split PCB Edition (20 HP Exciter + 14 HP Resonator)
+### Dual-Tone Split PCB Panel (20 HP Exciter + 14 HP Resonator)
 
 ![Elements v0.4 Split Front Panel](hardware_design/panel/pcb_art/split/split_panels_preview.png)
 
@@ -25,13 +25,7 @@ Two-piece PCB panel designed for distinct solder mask colors:
   - **Exciter Model Switch (PA9):** Toggles between **1: CLASSIC** (original Bow/Blow/Strike generators) and **2: INDUSTRIAL** (metal friction `[ FRICTION ]`, digital burst `[ BURST ]`, and industrial sample set `[ SAMPLES ]`).
   - **Resonator Model Switch (PE9):** Steps through **8 resonator models** (3 original, 4 ported from Rings, and 1 Kammerl Spectral Clouds implementation) with visual pulse LED feedback.
 
-### 2. Unified 34 HP Black PCB Edition
-
-![Elements v0.4 Unified Front Panel](hardware_design/panel/pcb_art/preview.png)
-
-Single monolithic 34 HP (172.5 mm) PCB front panel with matte black solder mask, white silkscreen, and silver finish.
-
-Complete production vector layers (`F.SilkS`, `F.Cu` / `F.Mask`, `Edge.Cuts`) and fabrication specifications for both editions are documented in the [Graphic Manual](hardware_design/panel/pcb_art/GRAPHIC_MANUAL.md).
+Complete production vector layers (`F.SilkS`, `F.Cu` / `F.Mask`, `Edge.Cuts`) and fabrication specifications are documented in the [Graphic Manual](hardware_design/panel/pcb_art/GRAPHIC_MANUAL.md).
 
 ---
 
