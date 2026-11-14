@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="24mm" height="24mm" viewBox="0 0 120 120">
+  <!-- Twin Peaks - 02 The Red Room / Black Lodge -->
+  <g fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="34.00,5.00 86.00,5.00 115.00,34.00 115.00,86.00 86.00,115.00 34.00,115.00 5.00,86.00 5.00,34.00" stroke-width="2.4" />
+    <polygon points="36.00,9.00 84.00,9.00 111.00,36.00 111.00,84.00 84.00,111.00 36.00,111.00 9.00,84.00 9.00,36.00" stroke-width="1.2" />
+    <line x1="9" y1="62.0" x2="111" y2="62.0" stroke-width="1.5" />
+    <polygon points="15.76,62.49 16.98,62.00 29.43,62.00 28.64,62.98 9.00,69.84 9.00,68.37" fill="#000000" stroke="none" />
+    <polygon points="41.87,62.00 42.30,62.49 38.47,70.82 28.64,62.98 29.43,62.00" fill="#000000" stroke="none" />
+    <polygon points="42.30,62.49 43.19,62.00 55.63,62.00 55.52,62.98 38.47,70.82" fill="#000000" stroke="none" />
+    <polygon points="68.08,62.00 68.85,62.49 70.76,70.82 55.52,62.98 55.63,62.00" fill="#000000" stroke="none" />
+    <polygon points="68.85,62.49 69.40,62.00 81.84,62.00 82.40,62.98 70.76,70.82" fill="#000000" stroke="none" />
+    <polygon points="94.28,62.00 95.39,62.49 103.05,70.82 82.40,62.98 81.84,62.00" fill="#000000" stroke="none" />
+    <polygon points="95.39,62.49 95.60,62.00 108.05,62.00 109.29,62.98 103.05,70.82" fill="#000000" stroke="none" />
+    <polygon points="9.00,75.66 21.54,71.80 13.66,81.60 9.00,82.86" fill="#000000" stroke="none" />
+    <polygon points="21.54,71.80 34.42,79.64 29.91,89.44 13.66,81.60" fill="#000000" stroke="none" />
+    <polygon points="34.42,79.64 54.51,71.80 53.38,81.60 29.91,89.44" fill="#000000" stroke="none" />
+    <polygon points="54.51,71.80 72.79,79.64 75.04,89.44 53.38,81.60" fill="#000000" stroke="none" />
+    <polygon points="72.79,79.64 87.47,71.80 93.10,81.60 75.04,89.44" fill="#000000" stroke="none" />
+    <polygon points="87.47,71.80 111.00,79.59 111.00,84.00 108.84,86.16 93.10,81.60" fill="#000000" stroke="none" />
+    <polygon points="25.16,100.16 52.14,92.38 50.73,104.63 33.85,108.85" fill="#000000" stroke="none" />
+    <polygon points="52.14,92.38 77.52,100.22 80.00,111.00 74.79,111.00 50.73,104.63" fill="#000000" stroke="none" />
+    <polygon points="77.52,100.22 99.30,92.38 100.51,94.49 84.00,111.00 80.00,111.00" fill="#000000" stroke="none" />
+    <polygon points="99.30,92.38 101.95,93.05 100.51,94.49" fill="#000000" stroke="none" />
+    <polygon points="9.00,36.00 36.00,9.00 47.00,9.00 42.00,30.00 35.00,48.00 28.00,62.00 9.00,62.00" stroke-width="1.6" />
+    <polygon points="111.00,36.00 84.00,9.00 73.00,9.00 78.00,30.00 85.00,48.00 92.00,62.00 111.00,62.00" stroke-width="1.6" />
+    <line x1="17.57" y1="27.43" x2="13.00" y2="62.00" stroke-width="1.2" />
+    <line x1="102.43" y1="27.43" x2="107.00" y2="62.00" stroke-width="1.2" />
+    <line x1="26.78" y1="18.22" x2="21.00" y2="62.00" stroke-width="1.2" />
+    <line x1="93.22" y1="18.22" x2="99.00" y2="62.00" stroke-width="1.2" />
+    <line x1="36.00" y1="9.00" x2="29.36" y2="59.28" stroke-width="1.2" />
+    <line x1="84.00" y1="9.00" x2="90.64" y2="59.28" stroke-width="1.2" />
+    <line x1="36" y1="9" x2="36" y2="62" stroke-width="0.9" />
+    <line x1="43" y1="9" x2="43" y2="62" stroke-width="0.9" />
+    <line x1="50" y1="9" x2="50" y2="62" stroke-width="0.9" />
+    <line x1="70" y1="9" x2="70" y2="62" stroke-width="0.9" />
+    <line x1="77" y1="9" x2="77" y2="62" stroke-width="0.9" />
+    <line x1="84" y1="9" x2="84" y2="62" stroke-width="0.9" />
+    <rect x="55" y="48" width="10" height="14" stroke-width="1.5" />
+    <line x1="53.5" y1="48" x2="66.5" y2="48" stroke-width="1.5" />
+    <circle cx="60" cy="21" r="2.8" fill="#000000" stroke="none" />
+    <path d="M 59,24 L 55,28 L 54.5,33 L 57,33 L 57,48 L 63,48 L 63,33 L 65.5,30 L 61,24 Z" fill="#000000" stroke="none" />
+    <line x1="42" y1="62" x2="42" y2="48" stroke-width="1.4" />
+    <circle cx="42" cy="43" r="3.0" stroke-width="1.3" />
+    <ellipse cx="42" cy="43" rx="6.0" ry="1.6" transform="rotate(-15 42 43)" stroke-width="1.1" />
+    <path d="M 73,62 L 73,52 L 85,52 L 85,62 M 75,52 L 76,43 L 84,43 L 84,52" stroke-width="1.6" />
+  </g>
+</svg>
